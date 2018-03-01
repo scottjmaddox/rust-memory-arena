@@ -6,17 +6,21 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::os::raw;
-use std::mem::transmute;
-use std::error::Error;
-use std::fmt;
-use std::result;
+mod c {
+    pub(crate) use libc::posix_memalign;
+    pub(crate) use libc::free;
+}
+
+use core::mem::transmute;
+use core::fmt;
+use core::result;
+use libc::{c_int, c_void};
 
 type Result<T> = result::Result<T, AllocError>;
 
 //TODO: implement aligned_alloc for Windows, using _aligned_malloc
 pub(crate) unsafe fn aligned_alloc(alignment: usize, size: usize) -> Result<*mut u8> {
-    let mut mem: *mut raw::c_void = transmute(0_usize);
+    let mut mem: *mut c_void = transmute(0_usize);
     if size == 0 {
         return Err(AllocError::ZeroSizeAlloc);
     }
@@ -35,22 +39,9 @@ pub(crate) unsafe fn free(ptr: *mut u8) {
 #[derive(Debug, PartialEq, Eq)]
 pub enum AllocError {
     ZeroSizeAlloc,
-    Errno(raw::c_int),
+    Errno(c_int),
 }
 
-impl Error for AllocError {
-    fn description(&self) -> &str {
-        match *self {
-            AllocError::ZeroSizeAlloc => "zero sized allocation is not supported",
-
-            AllocError::Errno(_) => "system allocation error",
-        }
-    }
-
-    fn cause(&self) -> Option<&Error> {
-        None
-    }
-}
 impl fmt::Display for AllocError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -58,18 +49,6 @@ impl fmt::Display for AllocError {
 
             AllocError::Errno(errno) => write!(f, "system allocation error number: {}", errno),
         }
-    }
-}
-
-mod c {
-    use std::os::raw;
-    extern "C" {
-        pub(crate) fn posix_memalign(
-            mem: *mut *mut raw::c_void,
-            alignment: usize,
-            size: usize,
-        ) -> raw::c_int;
-        pub(crate) fn free(mem: *mut *mut raw::c_void);
     }
 }
 
@@ -81,7 +60,7 @@ mod tests {
     fn aligned_alloc_and_free() {
         unsafe {
             let alignment = 1024;
-            let ptr = aligned_alloc(alignment, ::std::mem::size_of::<isize>()).unwrap();
+            let ptr = aligned_alloc(alignment, ::core::mem::size_of::<isize>()).unwrap();
             let iptr: *mut isize = transmute(ptr);
             *iptr = 0;
             free(ptr);

@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 //
-// This file has been modified from the original version in the 
+// This file has been modified from the original version in the
 // Rust core and/or standard library. The original copyright is below:
 //
 // Copyright 2012-2014 The Rust Project Developers. See the COPYRIGHT
@@ -20,8 +20,8 @@
 // except according to those terms.
 
 use nonzero::NonZero;
-use std::marker::PhantomData;
-use std::fmt;
+use core::marker::PhantomData;
+use core::fmt;
 use coerce_unsized::CoerceUnsized;
 use unsize::Unsize;
 

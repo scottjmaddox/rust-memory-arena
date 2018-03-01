@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use std::cell::Cell;
+use core::cell::Cell;
 use arena_box::ArenaBox;
 
 pub struct Arena {
@@ -37,8 +37,8 @@ impl Arena {
 
     #[inline]
     fn padding<T>() -> usize {
-        let size = ::std::mem::size_of::<T>();
-        let alignment = ::std::mem::align_of::<T>();
+        let size = ::core::mem::size_of::<T>();
+        let alignment = ::core::mem::align_of::<T>();
         let rem = size % alignment;
         if rem == 0 {
             0
@@ -48,12 +48,12 @@ impl Arena {
     }
 
     fn alloc<T>(&self) -> Option<*mut T> {
-        let size = ::std::mem::size_of::<T>();
+        let size = ::core::mem::size_of::<T>();
         if size == 0 {
-            return Some(::std::mem::align_of::<T>() as *mut T);
+            return Some(::core::mem::align_of::<T>() as *mut T);
         }
         let padding = Self::padding::<T>();
-        if self.used.get() + size + padding  > self.size {
+        if self.used.get() + size + padding > self.size {
             return None;
         }
         let p = (self.mem as usize + self.used.get()) as *mut T;

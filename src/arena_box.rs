@@ -6,7 +6,7 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 //
-// This file has been modified from the original version in the 
+// This file has been modified from the original version in the
 // Rust core and/or standard library. The original copyright is below:
 //
 // Copyright 2012-2015 The Rust Project Developers. See the COPYRIGHT
@@ -73,15 +73,15 @@
 //! for a `Cons`. By introducing a `ArenaBox`, which has a defined size, we know how
 //! big `Cons` needs to be.
 
-use std::borrow;
-use std::cmp::Ordering;
-use std::fmt;
-use std::hash::{self, Hash, Hasher};
-use std::ops::{Deref, DerefMut};
-use std::marker::PhantomData;
+use core::borrow;
+use core::cmp::Ordering;
+use core::fmt;
+use core::hash::{self, Hash, Hasher};
+use core::ops::{Deref, DerefMut};
+use core::marker::PhantomData;
 
 use unique::Unique;
-use ::Arena;
+use Arena;
 
 /// A pointer type for a value that lives in a `Arena`.
 ///
@@ -145,14 +145,14 @@ impl<'a, T: ?Sized> ArenaBox<'a, T> {
     /// ```
     pub fn into_raw(b: ArenaBox<T>) -> *mut T {
         let p = b.value.as_ptr();
-        ::std::mem::forget(b);
+        ::core::mem::forget(b);
         p
     }
 }
 
 impl<'a, T: ?Sized> Drop for ArenaBox<'a, T> {
     fn drop(&mut self) {
-        unsafe { ::std::ptr::drop_in_place(self.value.as_ptr()) }
+        unsafe { ::core::ptr::drop_in_place(self.value.as_ptr()) }
     }
 }
 
@@ -198,7 +198,6 @@ impl<'a, T: ?Sized + Ord> Ord for ArenaBox<'a, T> {
 }
 
 impl<'a, T: ?Sized + Eq> Eq for ArenaBox<'a, T> {}
-
 
 impl<'a, T: ?Sized + Hash> Hash for ArenaBox<'a, T> {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
@@ -254,7 +253,7 @@ impl<'a, T: ?Sized + Hasher> Hasher for ArenaBox<'a, T> {
 //     ///
 //     /// ```
 //     /// # use memory_arena::*;
-//     /// use std::any::Any;
+//     /// use core::any::Any;
 //     ///
 //     /// fn print_if_string(value: ArenaBox<Any>) {
 //     ///     if let Ok(string) = value.downcast::<String>() {
@@ -290,7 +289,7 @@ impl<'a, T: ?Sized + Hasher> Hasher for ArenaBox<'a, T> {
 //     ///
 //     /// ```
 //     /// # use memory_arena::*;
-//     /// use std::any::Any;
+//     /// use core::any::Any;
 //     ///
 //     /// fn print_if_string<'a>(value: ArenaBox<'a, Any + Send>) {
 //     ///     if let Ok(string) = value.downcast::<String>() {
