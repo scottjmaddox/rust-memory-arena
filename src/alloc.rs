@@ -26,6 +26,7 @@ type Result<T> = result::Result<T, AllocError>;
 
 #[cfg(not(windows))]
 pub(crate) unsafe fn aligned_alloc(size: usize, alignment: usize) -> Result<*mut u8> {
+    assert!(alignment.count_ones() == 1);
     let mut mem: *mut c_void = transmute(0_usize);
     if size == 0 {
         return Err(AllocError::ZeroSizeAlloc);
@@ -40,6 +41,7 @@ pub(crate) unsafe fn aligned_alloc(size: usize, alignment: usize) -> Result<*mut
 
 #[cfg(windows)]
 pub(crate) unsafe fn aligned_alloc(size: usize, alignment: usize) -> Result<*mut u8> {
+    assert!(alignment.count_ones() == 1);
     if size == 0 {
         return Err(AllocError::ZeroSizeAlloc);
     }
