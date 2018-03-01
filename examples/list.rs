@@ -1,13 +1,22 @@
 extern crate memory_arena;
 use memory_arena::*;
 
+#[cfg(not(windows))]
 #[derive(Debug)]
 enum List<'a, T> {
     Nil,
     Cons(T, ArenaBox<'a, List<'a, T>>),
 }
+
+#[cfg(windows)]
+#[derive(Debug)]
+enum List<'a, T> {
+    Cons(T, ArenaBox<'a, List<'a, T>>),
+    Nil,
+}
 //TODO: figure out why swapping Nil and Cons results in a segfault
 // when trying to write the value to the ArenaBox's pointer
+//TODO: and why does Windows require the opposite order?!? (Cons, then Nil)
 
 fn main() {
     let a = Arena::new(1024, 1024).unwrap();

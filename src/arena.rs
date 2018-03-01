@@ -163,12 +163,12 @@ mod tests {
     #[test]
     #[should_panic]
     fn arena_invalid_alignment() {
-        let a = Arena::new(1024, 1025).unwrap();
+        let _ = Arena::new(1024, 1025).unwrap();
     }
     #[test]
     #[should_panic]
     fn arena_aligned_alloc_invalid_alignment() {
         let a = Arena::new(1024, 1024).unwrap();
-        let p1 = a.aligned_alloc(1, 3).unwrap();
+        let _ = a.aligned_alloc(1, 3).unwrap();
     }
 }

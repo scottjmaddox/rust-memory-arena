@@ -6,7 +6,6 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-use core::mem::transmute;
 use core::fmt;
 use core::result;
 #[allow(unused_imports)]
@@ -15,19 +14,21 @@ use libc::{c_int, c_void, size_t};
 
 #[cfg(not(windows))]
 pub(crate) use libc::posix_memalign;
+#[cfg(not(windows))]
+pub(crate) use libc::free as c_free;
 #[cfg(windows)]
 extern {
     fn _aligned_malloc(size: size_t, alignment: size_t) -> *mut c_void;
     fn _get_errno(p: *mut c_int) -> c_int;
+    fn _aligned_free(p: *mut c_void);
 }
-pub(crate) use libc::free as c_free;
 
 type Result<T> = result::Result<T, AllocError>;
 
 #[cfg(not(windows))]
 pub(crate) unsafe fn aligned_alloc(size: usize, alignment: usize) -> Result<*mut u8> {
     assert!(alignment.count_ones() == 1);
-    let mut mem: *mut c_void = transmute(0_usize);
+    let mut mem: *mut c_void = 0 as *mut c_void;
     if size == 0 {
         return Err(AllocError::ZeroSizeAlloc);
     }
@@ -35,7 +36,7 @@ pub(crate) unsafe fn aligned_alloc(size: usize, alignment: usize) -> Result<*mut
     if errno != 0 {
         Err(AllocError::Errno(errno))
     } else {
-        Ok(transmute(mem))
+        Ok(mem as *mut u8)
     }
 }
 
@@ -45,18 +46,24 @@ pub(crate) unsafe fn aligned_alloc(size: usize, alignment: usize) -> Result<*mut
     if size == 0 {
         return Err(AllocError::ZeroSizeAlloc);
     }
-    let mut mem: *mut c_void = _aligned_malloc(size, alignment);
+    let mem = _aligned_malloc(size, alignment);
     if mem.is_null() {
-        let errno: c_int = 0;
+        let mut errno: c_int = 0;
         _get_errno(&mut errno);
         Err(AllocError::Errno(errno))
     } else {
-        Ok(transmute(mem))
+        Ok(mem as *mut u8)
     }
 }
 
+#[cfg(not(windows))]
 pub(crate) unsafe fn free(ptr: *mut u8) {
-    c_free(transmute(ptr));
+    c_free(ptr as *mut c_void);
+}
+
+#[cfg(windows)]
+pub(crate) unsafe fn free(ptr: *mut u8) {
+    _aligned_free(ptr as *mut c_void);
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -84,7 +91,7 @@ mod tests {
         unsafe {
             let alignment = 1024;
             let ptr = aligned_alloc(alignment, ::core::mem::size_of::<isize>()).unwrap();
-            let iptr: *mut isize = transmute(ptr);
+            let iptr = ptr as *mut isize;
             *iptr = 0;
             free(ptr);
         }

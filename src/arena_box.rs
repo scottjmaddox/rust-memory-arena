@@ -35,43 +35,6 @@
 //! let a = Arena::new(1024, 1024).unwrap();
 //! let x = a.new_box(5).unwrap();
 //! ```
-//!
-//! Creating a recursive data structure:
-//!
-//! ```
-//! # use memory_arena::*;
-//! #[derive(Debug)]
-//! enum List<'a, T> {
-//!     Nil,
-//!     Cons(T, ArenaBox<'a, List<'a, T>>),
-//! }
-//!
-//! fn main() {
-//!     let a = Arena::new(1024, 1024).unwrap();
-//!     let list = a.new_box(List::Nil).unwrap();
-//!     let list = a.new_box(List::Cons(1, list)).unwrap();
-//!     let list = a.new_box(List::Cons(2, list)).unwrap();
-//!     let list = a.new_box(List::Cons(3, list)).unwrap();
-//!     println!("{:?}", list);
-//! }
-//! ```
-//!
-//! This will print `Cons(3, Cons(2, Cons(1, Nil)))`.
-//!
-//! Recursive structures must be boxed, because if the definition of `Cons`
-//! looked like this:
-//!
-//! ```compile_fail,E0072
-//! # use memory_arena::*;
-//! # enum List<T> {
-//! Cons(T, List<T>),
-//! # }
-//! ```
-//!
-//! It wouldn't work. This is because the size of a `List` depends on how many
-//! elements are in the list, and so we don't know how much memory to allocate
-//! for a `Cons`. By introducing a `ArenaBox`, which has a defined size, we know how
-//! big `Cons` needs to be.
 
 use core::borrow;
 use core::cmp::Ordering;
@@ -390,5 +353,26 @@ impl<'a, T: ?Sized> AsRef<T> for ArenaBox<'a, T> {
 impl<'a, T: ?Sized> AsMut<T> for ArenaBox<'a, T> {
     fn as_mut(&mut self) -> &mut T {
         &mut **self
+    }
+}
+
+#[cfg(test)]
+mod test {
+    #[allow(unused_imports)]
+    use super::*;
+
+    #[test]
+    fn ln112() {
+        let a = Arena::new(1024, 1024).unwrap();
+        let x = a.new_box(5).unwrap();
+        let ptr = ArenaBox::into_raw(x);
+        let _ = unsafe { ArenaBox::from_raw(ptr) };
+    }
+
+    #[test]
+    fn ln140() {
+        let a = Arena::new(1024, 1024).unwrap();
+        let x = a.new_box(5).unwrap();
+        let _ = ArenaBox::into_raw(x);
     }
 }
