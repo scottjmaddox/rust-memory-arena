@@ -6,25 +6,27 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-mod c {
-    pub(crate) use libc::posix_memalign;
-    pub(crate) use libc::free;
-}
-
 use core::mem::transmute;
 use core::fmt;
 use core::result;
 use libc::{c_int, c_void};
 
+
+#[cfg(not(windows))]
+pub(crate) use libc::posix_memalign;
+// #[cfg(windows)]
+// extern "C" fn _aligned_malloc(size: usize, alignment: usize) -> *mut u8;
+pub(crate) use libc::free as c_free;
+
 type Result<T> = result::Result<T, AllocError>;
 
 //TODO: implement aligned_alloc for Windows, using _aligned_malloc
-pub(crate) unsafe fn aligned_alloc(alignment: usize, size: usize) -> Result<*mut u8> {
+pub(crate) unsafe fn aligned_alloc(size: usize, alignment: usize) -> Result<*mut u8> {
     let mut mem: *mut c_void = transmute(0_usize);
     if size == 0 {
         return Err(AllocError::ZeroSizeAlloc);
     }
-    let errno = c::posix_memalign(&mut mem, alignment, size);
+    let errno = posix_memalign(&mut mem, alignment, size);
     if errno != 0 {
         Err(AllocError::Errno(errno))
     } else {
@@ -33,7 +35,7 @@ pub(crate) unsafe fn aligned_alloc(alignment: usize, size: usize) -> Result<*mut
 }
 
 pub(crate) unsafe fn free(ptr: *mut u8) {
-    c::free(transmute(ptr));
+    c_free(transmute(ptr));
 }
 
 #[derive(Debug, PartialEq, Eq)]

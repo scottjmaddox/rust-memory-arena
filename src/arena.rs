@@ -16,7 +16,7 @@ pub struct Arena {
 }
 
 impl Arena {
-    pub fn new(alignment: usize, size: usize) -> Result<Self, ::alloc::AllocError> {
+    pub fn new(size: usize, alignment: usize) -> Result<Self, ::alloc::AllocError> {
         if size == 0 {
             Ok(Self {
                 size: size,
@@ -25,7 +25,7 @@ impl Arena {
             })
         } else {
             unsafe {
-                let mem = ::alloc::aligned_alloc(alignment, size)?;
+                let mem = ::alloc::aligned_alloc(size, alignment)?;
                 Ok(Self {
                     size: size,
                     used: Cell::new(0),
@@ -73,7 +73,7 @@ impl Arena {
     /// # use memory_arena::*;
     /// let alignment = 1024;
     /// let size = 1024;
-    /// let a = Arena::new(alignment, size).unwrap();
+    /// let a = Arena::new(size, alignment).unwrap();
     /// let mut num = a.new_box(42).unwrap();
     /// assert_eq!(*num, 42);
     /// *num += 1;
@@ -87,8 +87,9 @@ impl Arena {
     /// ```
     /// # use memory_arena::*;
     /// let alignment = 512;
+    /// let alignment = 512;
     /// let size = 1;
-    /// let a = Arena::new(alignment, size).unwrap();
+    /// let a = Arena::new(size, alignment).unwrap();
     /// let i: usize = 42;
     /// assert_eq!(a.new_box(i), Err(42));
     /// ```
@@ -135,7 +136,7 @@ mod tests {
     fn memory_arena_box() {
         let alignment = 1024;
         let size = 1024;
-        let a = Arena::new(alignment, size).unwrap();
+        let a = Arena::new(size, alignment).unwrap();
         let mut num = a.new_box(42).unwrap();
         assert_eq!(*num, 42);
         *num += 1;
@@ -145,7 +146,7 @@ mod tests {
     fn memory_arena_out_of_memory() {
         let alignment = 512;
         let size = 1;
-        let a = Arena::new(alignment, size).unwrap();
+        let a = Arena::new(size, alignment).unwrap();
         let i: usize = 42;
         assert_eq!(a.new_box(i), Err(42));
     }
