@@ -3,8 +3,8 @@ use memory_arena::*;
 
 #[derive(Debug)]
 enum List<'a, T> {
-    Cons(T, ArenaBox<'a, List<'a, T>>),
     Nil,
+    Cons(T, ArenaBox<'a, List<'a, T>>),
 }
 
 fn main() {

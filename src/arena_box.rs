@@ -19,12 +19,20 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! A pointer type for a value that lives in a `Arena`.
+//! A pointer type for a value that lives in an `Arena`.
 //!
 //! `ArenaBox<T>`, casually referred to as an 'arena box', provides a safe
 //! interface around allocation from a memory arena allocation. Arena boxes
-//! provide ownership for the allocated value, and drops their contained value
+//! provide ownership for the allocated value, and drop their contained value
 //! when they go out of scope.
+//!
+//! Unlike the `Box<T>` type from the standard library, out-of-scope arena boxes
+//! do not get free'd through the Rust allocator. Instead, they continue to take
+//! up space in their memory arena until the memory arena itself goes out of
+//! scope and is dropped. While this can temporarily result in higher memory
+//! usage, it can greatly reduce the performance impact of allocating and
+//! freeing, since allocations are a just a (checked) pointer bump, and frees
+//! cost nothing.
 //!
 //! # Examples
 //!
@@ -35,6 +43,43 @@
 //! let a = Arena::new(1024, 1024).unwrap();
 //! let x = a.new_box(5).unwrap();
 //! ```
+//!
+//! Creating a recursive data structure:
+//!
+//! ```
+//! # use memory_arena::*;
+//! #[derive(Debug)]
+//! enum List<'a, T> {
+//!     Nil,
+//!     Cons(T, ArenaBox<'a, List<'a, T>>),
+//! }
+//!
+//! fn main() {
+//!     let a = Arena::new(1024, 1024).unwrap();
+//!     let list = a.new_box(List::Nil).unwrap();
+//!     let list = a.new_box(List::Cons(1, list)).unwrap();
+//!     let list = a.new_box(List::Cons(2, list)).unwrap();
+//!     let list = a.new_box(List::Cons(3, list)).unwrap();
+//!     println!("{:?}", list);
+//! }
+//! ```
+//!
+//! This will print `Cons(3, Cons(2, Cons(1, Nil)))`.
+//!
+//! Recursive structures must be boxed, because if the definition of `Cons`
+//! looked like this:
+//!
+//! ```compile_fail,E0072
+//! # use memory_arena::*;
+//! # enum List<T> {
+//! Cons(T, List<T>),
+//! # }
+//! ```
+//!
+//! It wouldn't work. This is because the size of a `List` depends on how many
+//! elements are in the list, and so we don't know how much memory to allocate
+//! for a `Cons`. By introducing an `ArenaBox`, which has a defined size, we
+//! know how big `Cons` needs to be.
 
 use core::borrow;
 use core::cmp::Ordering;
@@ -46,7 +91,7 @@ use core::marker::PhantomData;
 use unique::Unique;
 use Arena;
 
-/// A pointer type for a value that lives in a `Arena`.
+/// A pointer type for a value that lives in an `Arena`.
 ///
 /// See the [module-level documentation](../arena_box/) for more.
 pub struct ArenaBox<'a, T: ?Sized> {
