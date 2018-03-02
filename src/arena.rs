@@ -110,7 +110,7 @@ impl Arena {
             None => Err(x),
             Some(p) => {
                 unsafe {
-                    *p = x;
+                    ::core::ptr::write(p, x);
                 }
                 Ok(unsafe { ArenaBox::from_raw(p) })
             }
